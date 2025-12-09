@@ -1,10 +1,13 @@
 import networkx as nx
 from database.dao import DAO
-
+from model.rifiugio import Rifugio
+from model.connessione import Connessione
 
 class Model:
     def __init__(self):
         self.G = nx.Graph()
+        self.rifugi = DAO.read_rifugi()
+        self.sentieri = DAO.read_connessioni()
 
     def build_graph(self, year: int):
         """
@@ -13,14 +16,22 @@ class Model:
         Quindi il grafo avrà solo i nodi che appartengono almeno ad una connessione, non tutti quelli disponibili.
         :param year: anno limite fino al quale selezionare le connessioni da includere.
         """
-        # TODO
+        for sentiero in self.sentieri:
+            if sentiero.anno <= year:
+                r1 = self.rifugi[sentiero.id_rifugio1]
+                r2 = self.rifugi[sentiero.id_rifugio2]
+
+                self.G.add_node(r1)
+                self.G.add_node(r2)
+                self.G.add_edge(r1, r2)
+
 
     def get_nodes(self):
         """
         Restituisce la lista dei rifugi presenti nel grafo.
         :return: lista dei rifugi presenti nel grafo.
         """
-        # TODO
+        return self.G.nodes()
 
     def get_num_neighbors(self, node):
         """
@@ -28,14 +39,14 @@ class Model:
         :param node: un rifugio (cioè un nodo del grafo)
         :return: numero di vicini diretti del nodo indicato
         """
-        # TODO
+        return self.G.degree[node]
 
     def get_num_connected_components(self):
         """
         Restituisce il numero di componenti connesse del grafo.
         :return: numero di componenti connesse
         """
-        # TODO
+        return nx.number_connected_components(self.G)
 
     def get_reachable(self, start):
         """
@@ -53,5 +64,13 @@ class Model:
 
         return a
         """
-
-        # TODO
+        visited = set()
+        stack = [start.id]
+        while stack:
+            node = stack.pop()
+            if node not in visited:
+                visited.add(node)
+                neighbors = list(self.G.neighbors(node))
+                stack.extend(n for n in neighbors if n not in visited)
+        visited.remove(start.id)
+        return [self.id_to_rifugio[n] for n in visited]
